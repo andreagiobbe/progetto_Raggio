@@ -9,7 +9,7 @@ using TMPro;
 public class ImagesManager : MonoBehaviour
 {
     private string resourceImagesPath = "Datasets/BallsDataset/test/";   // path da cui prendere le immagini
-    private readonly int numImages = 5; // numero di immagini da generare
+    private readonly int numImages = 1; // numero di immagini da generare
     private GameObject imagesCanvas;    // Canvas dove posizionare le immagini
     public GameObject rawImagePrefab;   // Prefab delle immagini
 
@@ -32,11 +32,11 @@ public class ImagesManager : MonoBehaviour
 
         // Calcola lo spazio occupato da tutte le immagini tenendo conto della distanza tra esse
         float totalSpacing = spacing * (numImages - 1);
-        float totalImageWidth = Mathf.Min((canvasWidth - totalSpacing) / numImages, canvasHeight * 0.8f); // dimensione un'immagine
+        float totalImageWidth = Mathf.Min((canvasWidth - totalSpacing) / numImages, canvasHeight * 0.5f); // dimensione un'immagine
         float totalOccupiedWidth = totalImageWidth * numImages + totalSpacing; // larghezza complessiva di immagini + spacing
 
         // Posizione verticale delle immagini
-        float yPos = canvasHeight / 2;
+        float yPos = canvasHeight *2 / 3;
 
         // Posizione orizzontale iniziale (per centrare le immagini)
         float startXPos = -(totalOccupiedWidth / 2) + totalImageWidth / 2;
