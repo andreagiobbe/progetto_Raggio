@@ -36,7 +36,7 @@ public class ImagesManager : MonoBehaviour
         float totalOccupiedWidth = totalImageWidth * numImages + totalSpacing; // larghezza complessiva di immagini + spacing
 
         // Posizione verticale delle immagini
-        float yPos = canvasHeight *2 / 3;
+        float yPos = canvasHeight *3 / 5;
 
         // Posizione orizzontale iniziale (per centrare le immagini)
         float startXPos = -(totalOccupiedWidth / 2) + totalImageWidth / 2;
