@@ -45,7 +45,7 @@ public class ImagesManager : MonoBehaviour
         {
             // Istanzia il prefab
             GameObject newImage = Instantiate(rawImagePrefab, imagesCanvas.transform);
-            newImage.name = "Picture #" + (i + 1).ToString();
+            newImage.name = "Picture";
             newImage.GetComponentInChildren<TextMeshProUGUI>().text = newImage.name;
             RectTransform imageRect = newImage.GetComponent<RectTransform>();
 
@@ -66,50 +66,75 @@ public class ImagesManager : MonoBehaviour
     // Genera numImages nuove immagini a caso da imagesPath
     void RandomizeImages(string imagesPath, int numImages)
     {
-        // Lista di tutte le immagini vuote
+        // Lista di tutte le immagini valide (con RawImage) su ImagesCanvas
         List<RawImage> children = new List<RawImage>();
-        foreach(Transform child in imagesCanvas.transform)
+        foreach (Transform child in imagesCanvas.transform)
         {
-            if (child.gameObject.layer != LayerMask.NameToLayer("Ignore Raycast"))
-                children.Add(child.GetComponent<RawImage>());
+            RawImage rawImage = child.GetComponent<RawImage>();
+            if (rawImage != null)
+            {
+                children.Add(rawImage);
+            }
+            else
+            {
+                Debug.LogWarning($"Il GameObject '{child.name}' non ha un componente RawImage e sarà ignorato.");
+            }
         }
-        // Debug.Log("Numero figli di ImagesCanvas: " + children.Count); // bug-related
 
-        // Lista delle immagini
+        // Debug per verificare il numero di RawImage trovate
+        Debug.Log($"Numero di RawImage trovate: {children.Count}");
+
+        if (children.Count == 0)
+        {
+            Debug.LogWarning("Nessuna RawImage trovata nella ImagesCanvas. Verifica la configurazione.");
+            return;
+        }
+
+        // Lista delle immagini disponibili
         imagesPath = imagesPath.Replace("\\", "/").TrimEnd('/');
-
-        // Restituisce i nomi di tutti i file in imagesPath, anche sottocartelle e con qualunque nome
         string[] texturePaths = Directory.GetFiles("Assets/Resources/" + imagesPath, "*.*", SearchOption.AllDirectories);
-        List<string> validExtensions = new List<string>() {".png", ".jpg", ".jpeg"};
+        List<string> validExtensions = new List<string>() { ".png", ".jpg", ".jpeg" };
         List<string> validImagesPath = new List<string>();
 
-        // Esclude le estensioni scorrette
-        foreach(string imagePath in texturePaths)
-            if(validExtensions.Contains(Path.GetExtension(imagePath).ToLower()))
+        foreach (string imagePath in texturePaths)
+        {
+            if (validExtensions.Contains(Path.GetExtension(imagePath).ToLower()))
             {
                 validImagesPath.Add(resourceImagesPath + Path.GetFileNameWithoutExtension(imagePath));
             }
-        // Se ci sono meno immagini di quelle che si vuole mostrare
+        }
+
+        if (validImagesPath.Count == 0)
+        {
+            Debug.LogWarning($"Nessuna immagine valida trovata nel percorso: {imagesPath}");
+            return;
+        }
+
+        // Assicurati che numImages non sia maggiore del numero di immagini disponibili
         numImages = Mathf.Min(numImages, validImagesPath.Count);
 
-        // Carica le immagini
-        for(int i = 0; i < numImages; i++)
+        // Carica e assegna texture alle immagini
+        for (int i = 0; i < numImages; i++)
         {
-            // Indice random tra quelli validi
             int rndIdx = Random.Range(0, validImagesPath.Count);
             string assetPath = validImagesPath[rndIdx].Replace(Application.dataPath, "").Replace("\\", "/");
-            validImagesPath.RemoveAt(rndIdx);   // rimuovi immagine inserita
+            validImagesPath.RemoveAt(rndIdx);
+
             Texture2D texture = Resources.Load<Texture2D>(assetPath);
 
-            // Metti l'immagine se esiste
-            if(texture != null)
+            if (texture != null)
             {
                 children[i].texture = texture;
             }
+            else
+            {
+                Debug.LogWarning($"Impossibile caricare la texture dall'asset path: {assetPath}");
+            }
         }
-        
-        Debug.Log(numImages.ToString() + " immagini sono state randomizzate!");
+
+        Debug.Log($"{numImages} immagini randomizzate e assegnate!");
     }
+
 
     // Distrugge tutte le immagini figlie della ImagesCanvas
     // ------------------------------------------------------
@@ -117,30 +142,74 @@ public class ImagesManager : MonoBehaviour
     // immagini figlie di imagesCanvas.
     void DestroyTextures()
     {
-        /* 
-        Provando a distruggere le immagini preesistenti con Destroy(child.gameObject) 
-        portava a un bug: le immagini rimanevano grigie (senza texture) 
-        sulla imagesCanvas, e la lista children all'interno di RandomizeImages pareva 
-        pareva avesse 2*numImages elementi invece che numImages.
-        */ 
-        foreach(Transform child in imagesCanvas.transform)
+        if (imagesCanvas == null)
+        {
+            Debug.LogWarning("ImagesCanvas non trovato. Verifica che esista e che sia correttamente assegnato.");
+            return;
+        }
+
+        foreach (Transform child in imagesCanvas.transform)
         {
             if (child.gameObject.layer != LayerMask.NameToLayer("Ignore Raycast"))
             {
-                // Se non ho chiuso il dialogo, lo chiudo
-                DialogueScriptOnClick dialogueScript = GetComponent<DialogueScriptOnClick>();
-                if (dialogueScript.HasAlreadyDialogueWindow(child.gameObject, "DialoguePanel"))
+                // Verifica se il GameObject ha un componente RawImage
+                RawImage rawImage = child.gameObject.GetComponent<RawImage>();
+                if (rawImage != null)
                 {
-                    dialogueScript.CloseDialogue(child.gameObject.transform.Find("DialoguePanel").gameObject);
+                    rawImage.texture = null; // Rimuovi la texture
                 }
-                child.gameObject.GetComponent<RawImage>().texture = null;   // rimozione texture
-                
-                // Destroy(child.gameObject);   // bug
+                else
+                {
+                    Debug.Log($"Il GameObject '{child.gameObject.name}' non ha un componente RawImage, potrebbe essere un altro elemento come un Dropdown.");
+                }
+
+                // Gestione del dialogo se necessario
+                DialogueScriptOnClick dialogueScript = GetComponent<DialogueScriptOnClick>();
+                if (dialogueScript != null)
+                {
+                    if (dialogueScript.HasAlreadyDialogueWindow(child.gameObject, "DialoguePanel"))
+                    {
+                        GameObject dialoguePanel = child.gameObject.transform.Find("DialoguePanel")?.gameObject;
+                        if (dialoguePanel != null)
+                        {
+                            dialogueScript.CloseDialogue(dialoguePanel);
+                        }
+                    }
+                }
             }
         }
 
         Debug.Log("Textures rimosse!");
     }
+
+    /*
+        void DestroyTextures()
+        {
+            /* 
+            Provando a distruggere le immagini preesistenti con Destroy(child.gameObject) 
+            portava a un bug: le immagini rimanevano grigie (senza texture) 
+            sulla imagesCanvas, e la lista children all'interno di RandomizeImages pareva 
+            pareva avesse 2*numImages elementi invece che numImages.
+
+            foreach(Transform child in imagesCanvas.transform)
+            {
+                if (child.gameObject.layer != LayerMask.NameToLayer("Ignore Raycast"))
+                {
+                    // Se non ho chiuso il dialogo, lo chiudo
+                    DialogueScriptOnClick dialogueScript = GetComponent<DialogueScriptOnClick>();
+                    if (dialogueScript.HasAlreadyDialogueWindow(child.gameObject, "DialoguePanel"))
+                    {
+                        dialogueScript.CloseDialogue(child.gameObject.transform.Find("DialoguePanel").gameObject);
+                    }
+                    child.gameObject.GetComponent<RawImage>().texture = null;   // rimozione texture
+
+                    // Destroy(child.gameObject);   // bug
+                }
+            }
+
+            Debug.Log("Textures rimosse!");
+        }
+    */
 
     // Pulsante di refresh
     public void RefreshImages()

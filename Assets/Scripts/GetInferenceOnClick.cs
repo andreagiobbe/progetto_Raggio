@@ -12,8 +12,9 @@ public class GetInferenceOnClick : MonoBehaviour
     private RawImage imageToRecognise;              // immagine su cui fare predizione
     private IWorker worker;                         // worker per ONNX
     private string inference;                       // risultato della predizione
-    private readonly string[] classes = {"colecisti malata", "colecisti sana", "fegato sana", 
-        "milza malata", "milza sana", "pancreas sana", "rene malata", "rene sana", "tioride sana", "vescica malata", "vescica sana"};   // classi del dataset
+    private readonly string[] classes = {"Colecisti Malata", "Colecisti Sana", "Fegato Sana", 
+        "Milza Malata", "Milza Sana", "Pancreas Sana", "Rene Malata",
+        "Rene Sana", "Tiroide Sana", "Vescica Malata", "Vescica Sana"};   // classi del dataset
 
     public void GetInference(GameObject clickedObject)
     {
